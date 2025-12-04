@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+   <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa Interactivo de Lugares Turísticos</title>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDummyKeyExample"></script>
+
+<style>
+* { 
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #fda9da 0%, #f7b5db 50%, #f7b5db 100%);
+    color: hsl(0, 19%, 92%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+        .contenedor-principal {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .encabezado {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .encabezado h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .encabezado p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .contenedor-controles {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .selector-continentes {
+            background: rgba(255,255,255,0.06);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .selector-continentes h3 {
+            color: #ffffff;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .botones-continentes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .boton-continente {
+            padding: 12px;
+            border: 2px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.06);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .boton-continente:hover {
+            border-color: rgba(255,255,255,0.28);
+            background: rgba(255,255,255,0.12);
+            transform: translateY(-2px);
+        }
+
+        .boton-continente.activo {
+            background: linear-gradient(135deg, #ee88c3 0%, #ee88c3 100%);
+            color: white;
+            border-color: rgba(238, 136, 195, 0.6);
+            box-shadow: 0 4px 12px rgba(238, 136, 195, 0.3);
+        }
+
+        .filtro-busqueda {
+            background: rgba(255,255,255,0.06);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .filtro-busqueda h3 {
+            color: #ffffff;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .filtro-busqueda input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.02);
+            color: #ffffff;
+        }
+
+        .filtro-busqueda input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+        }
+
+        .contenedor-mapa {
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+            overflow: hidden;
+            margin-bottom: 30px;
+            animation: slideUp 0.6s ease-out;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #mapa {
+            width: 100%;
+            height: 600px;
+        }
+
+        .contenedor-lugares {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .tarjeta-lugar {
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+            transition: all 0.3s ease;
+            animation: slideUp 0.6s ease-out;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .tarjeta-lugar:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .tarjeta-imagen {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, rgba(228,55,219,0.18) 0%, rgba(228,55,219,0.18) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            color: white;
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+            background-repeat: no-repeat;
+        }
+
+        .tarjeta-imagen img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .tarjeta-contenido {
+            padding: 20px;
+        }
+
+        .tarjeta-contenido h4 {
+            color: #ffffff;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+
+        .tarjeta-pais {
+            color: rgba(255,255,255,0.9);
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .tarjeta-descripcion {
+            color: rgba(255,255,255,0.9);
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .tarjeta-puntuacion {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 12px;
+        }
+
+        .estrellas {
+            color: #ffc107;
+            font-size: 14px;
+        }
+
+        .puntuacion-texto {
+            color: rgba(255,255,255,0.9);
+            font-size: 12px;
+        }
+
+        .tarjeta-boton {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #ee88c3 0%, #ee88c3 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            opacity: 1;
+        }
+
+        .tarjeta-boton:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(238, 136, 195, 0.4);
+            background: linear-gradient(135deg, #e575bb 0%, #e575bb 100%);
+        }
+
+        .contenedor-leyenda {
+            background: rgba(255,255,255,0.06);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+
+        .contenedor-mapa-mundo {
+            background: rgba(255,255,255,0.06);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+            margin-bottom: 30px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .contenedor-mapa-mundo h3 {
+            color: #ffffff;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        #mapa-mundo {
+            width: 100%;
+            height: 400px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .imagen-mapa-mundial {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+        }
+
+        .contenedor-leyenda h3 {
+            color: #ffffff;
+            margin-bottom: 15px;
+        }
+
+        .leyenda-continentes {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .item-leyenda {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-continente {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .sin-resultados {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .sin-resultados p {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-contenido {
+            background-color: rgba(255,255,255,0.04);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
+            border: 1px solid rgba(255,255,255,0.06);
+            color: #ffffff;
+        }
+
+        .cerrar-modal {
+            color: rgba(255,255,255,0.85);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .cerrar-modal:hover {
+            color: #ffffff;
+        }
+
+        .modal-titulo {
+            color: #ffffff;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+
+        .modal-texto {
+            color: rgba(255,255,255,0.92);
+            line-height: 1.6;
+        }
+
+        /* Estilos para reseñas en el modal */
+        .resena-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .resena {
+            background: rgba(0,0,0,0.12);
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .resena-autor {
+            font-weight: 700;
+            color: #ffffff;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .resena-estrellas {
+            color: #ffc107;
+            margin-right: 8px;
+        }
+
+        .resena-text {
+            color: rgba(255,255,255,0.92);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 1024px) {
+            .contenedor-controles {
+                grid-template-columns: 1fr;
+            }
+
+            .contenedor-lugares {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+
+            #mapa {
+                height: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .encabezado h1 {
+                font-size: 24px;
+            }
+
+            .botones-continentes {
+                grid-template-columns: 1fr;
+            }
+
+            .contenedor-lugares {
+                grid-template-columns: 1fr;
+            }
+
+            #mapa {
+                height: 300px;
+            }
+        }
+    </style>
+
+<body>
+    <button id="lang-btn">EN</button>
+    <div class="contenedor-principal">
+        <div class="encabezado">
+            <h1 data-key="titulo_principal">🗺️ Mapa Interactivo de Lugares Turísticos</h1>
+            <p data-key="descrition_principal">Explora los destinos más visitados y conocidos del mundo por continente</p>
+        </div>
+
+        <div class="contenedor-controles">
+            <div class="selector-continentes">
+                 <h3 data-key="selecciona_continente">Selecciona un continente:</h3>
+                <div class="botones-continentes">
+                    <button class="boton-continente activo" data-continente="todos" data-key="boton_todos">🌍 Todos</button>
+                    <button class="boton-continente" data-continente="america" data-key="boton_america">América 🗽</button>
+                    <button class="boton-continente" data-continente="europa" data-key="boton_europa">Europa 🏛️</button>
+                    <button class="boton-continente" data-continente="asia" data-key="boton_asia">Asia 🏯</button>
+                    <button class="boton-continente" data-continente="africa" data-key="boton_africa">África 🦁</button>
+                    <button class="boton-continente" data-continente="oceania" data-key="boton_oceania">Oceanía 🌺</button>
+                </div>
+            </div>
+            
+    </script>
+</body>
+            <div class="filtro-busqueda">
+                <h3>Buscar lugar:</h3>
+                <input type="text" id="buscador" placeholder="Escribe el nombre de un lugar o país...">
+            </div>
+        </div>
+
+        <div class="contenedor-mapa">
+        </div>
+
+    <div class="contenedor-lugares" id="contenedor-lugares"></div>
+    
+    <!-- Imagen del Mapa del Mundo -->
+    <div style="margin-top: 60px; margin-bottom: 40px; text-align: center;">
+        <h2 style="color: #ffffff; margin-bottom: 20px; font-size: 28px;">🌍 Mapa del Mundo</h2>
+        <img src="./images/mapadelmundo.jpg" alt="Mapa del Mundo" style="width: 100%; max-width: 1200px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); display: block; margin: 0 auto;">
+    </div>
+    <div id="modal" class="modal">
+        <div class="modal-contenido">
+            <span class="cerrar-modal">&times;</span>
+            <h2 class="modal-titulo" id="modal-titulo"></h2>
+            <p class="modal-texto" id="modal-texto"></p>
+            
+            <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <h3 style="color: #ffffff; margin-bottom: 10px; font-size: 16px;">🌡️ Clima</h3>
+                <p id="modal-clima" style="color: rgba(255,255,255,0.92); font-size: 14px;"></p>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <h3 style="color: #ffffff; margin-bottom: 10px; font-size: 16px;">🍽️ Comidas Típicas</h3>
+                <p id="modal-comidas" style="color: rgba(255,255,255,0.92); font-size: 14px;"></p>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <h3 style="color: #ffffff; margin-bottom: 10px; font-size: 16px;">ℹ️ Información Adicional</h3>
+                <p id="modal-info" style="color: rgba(255,255,255,0.92); font-size: 14px;"></p>
+            </div>
+
+            <!-- Reseñas de usuarios -->
+            <div style="margin-top: 18px; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 8px;">
+                <h3 style="color: #ffffff; margin-bottom: 10px; font-size: 16px;">💬 Reseñas de usuarios</h3>
+                <div id="modal-resenas" style="color: rgba(255,255,255,0.92); font-size: 14px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Datos de lugares turísticos por continente
+        const lugaresTouristicos = [
+            // América
+            {
+                nombre: 'Machu Picchu',
+                pais: 'Perú',
+                continente: 'america',
+                latitud: -13.1631,
+                longitud: -72.5449,
+                imagen: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=500&h=300&fit=crop',
+                puntuacion: 4.9,
+                descripcion: 'Una de las nuevas siete maravillas del mundo, esta ciudadela inca es un destino imprescindible.',
+                precioDesdeEspaña: '650€ - 900€',
+                detalles: 'Machu Picchu es una ciudadela inca ubicada en la región de Cusco, Perú. Construida a mediados del siglo XV, fue designada como Patrimonio de la Humanidad por la UNESCO en 1983 y es considerada una de las nuevas siete maravillas del mundo.',
+                clima: 'Templado y frío. Temporada seca (mayo-octubre): 15-25°C. Temporada de lluvias (noviembre-abril): 10-20°C',
+                comidas: 'Papa a la huancaína, Ceviche, Lomo saltado, Choclo con queso, Pachamanca',
+                resenas: [
+                    { autor: 'Ana M.', puntuacion: 5, texto: 'Un lugar mágico, paisajes impresionantes y una experiencia histórica inolvidable.' },
+                    { autor: 'Jorge P.', puntuacion: 5, texto: 'La caminata vale totalmente la pena. Guías muy profesionales.' },
+                    { autor: 'Lucía R.', puntuacion: 4, texto: 'Impresionante, aunque estaba un poco concurrido en temporada alta.' },
+                    { autor: 'Marco S.', puntuacion: 5, texto: 'La vista al amanecer es algo que nunca olvidarás.' },
+                    { autor: 'Isabel G.', puntuacion: 4, texto: 'Mucha historia y cultura. Lleva abrigo por la noche.' },
+                    { autor: 'Pedro T.', puntuacion: 5, texto: 'Uno de los mejores viajes de mi vida.' }
+                ],
+                info: 'Altitud: 2,430 metros sobre el nivel del mar. Mejor época para visitar: mayo a octubre. Patrimonio de la Humanidad desde 1983.'
+            },
+            {
+                nombre: 'Cataratas del Niágara',
+                pais: 'Canadá - EE.UU.',
+                continente: 'america',
+                latitud: 43.0896,
+                longitud: -79.0849,
+                imagen: 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse3.mm.bing.net%2Fth%2Fid%2FOIP.ksz-Yu3XLtQhZimndJrgNQHaEK%3Fpid%3DApi&f=1&ipt=c3530370b5bec7277d4ef452dffd9b3465fe284cd9cc77182d5356117f060a4f&ipo=images',
+                puntuacion: 4.7,
+                descripcion: 'Una de las cascadas más espectaculares del mundo entre Canadá y Estados Unidos.',
+                detalles: 'Las Cataratas del Niágara son una serie de cataratas en el río Niágara. Con una altura de 51 metros, es una de las cascadas más poderosas del mundo y atrae a millones de turistas cada año.',
+                clima: 'Verano (junio-agosto): 20-26°C. Invierno (diciembre-febrero): -5 a 0°C. Las cataratas se congelan parcialmente en invierno.',
+                comidas: 'Sándwiches variados, Fish and chips, Hamburguesas, Pastel de carne canadiense, Jarabe de arce',
+                resenas: [
+                    { autor: 'Robert H.', puntuacion: 5, texto: 'Impresionante en persona. La potencia del agua es abrumadora. Recomiendo ir en barco.' },
+                    { autor: 'Sophie L.', puntuacion: 4, texto: 'Hermoso pero muy turístico. Los precios son altos. Vale la pena verlo al menos una vez.' },
+                    { autor: 'David K.', puntuacion: 5, texto: 'De noche con iluminación es mágico. Experiencia inolvidable con la familia.' },
+                    { autor: 'Emma T.', puntuacion: 4, texto: 'Las vistas son increíbles. Llevar chaqueta porque hay mucha agua y rocío.' },
+                    { autor: 'James M.', puntuacion: 5, texto: 'La naturaleza en su máxima expresión. Fotos espectaculares desde todos los ángulos.' }
+                ],
+                info: 'Volumen de agua: 750,000 galones por segundo. Mejor época: junio a septiembre. Patrimonio compartido entre Canadá y EE.UU.'
+                },
+            {
+                nombre: 'Cristo Redentor',
+                pais: 'Brasil',
+                continente: 'america',              
+                latitud: -22.9519,
+                longitud: -43.2105,
+                imagen: './images/cristoredentor.jpeg',
+                puntuacion: 4.8,
+                descripcion: 'Icónica estatua de Jesús en la cima del Corcovado en Río de Janeiro.',
+                detalles: 'El Cristo Redentor es una estatua colosal de Jesús Cristo ubicada en Río de Janeiro, Brasil. Con 30 metros de altura, es una de las estatuas más grandes del mundo y una de las nuevas siete maravillas del mundo.',
+                clima: 'Tropical. Verano (diciembre-marzo): 25-32°C. Invierno (junio-septiembre): 18-25°C. Lluvias en verano.',
+                comidas: 'Feijoada, Pão de queijo, Acarajé, Picanha a la brasa, Brigadeiro',
+                resenas: [
+                    { autor: 'María F.', puntuacion: 5, texto: 'La estatua es imponente y las vistas de Río son espectaculares.' },
+                    { autor: 'Carlos D.', puntuacion: 4, texto: 'Colas largas, pero la experiencia lo merece.' },
+                    { autor: 'Fernanda L.', puntuacion: 5, texto: 'Hermoso lugar para fotografías y para entender la cultura local.' },
+                    { autor: 'Diego N.', puntuacion: 4, texto: 'Llegar temprano ayuda a evitar multitudes.' },
+                    { autor: 'Paula R.', puntuacion: 5, texto: 'Emocionante y bien mantenido.' }
+                ],
+                info: 'Altura total: 38 metros. Construido en 1931. Visitado por más de 2 millones de personas anuales.'
+            },
+            {
+                nombre: 'Gran Cañón',
+                pais: 'Estados Unidos',
+                continente: 'america',
+                latitud: 36.1069,
+                longitud: -112.1129,
+                imagen: 'https://images.unsplash.com/photo-1474044159687-1ee9f3a51722?w=500&h=300&fit=crop',
+                puntuacion: 4.8,
+                descripcion: 'Un vasto cañón formado por el río Colorado en Arizona.',
+                detalles: 'El Gran Cañón es una inmensa garganta formada por el río Colorado. Con 446 km de largo y hasta 1.6 km de profundidad, es uno de los espectáculos naturales más impresionantes de la Tierra.',
+                clima: 'Desértico. Verano (mayo-octubre): 30-40°C. Invierno (noviembre-abril): 10-25°C. Muy seco.',
+                comidas: 'Burgers de búfalo, Fajitas de res, Tacos, Pan de maíz, Salsa picante',
+                resenas: [
+                    { autor: 'Thomas B.', puntuacion: 5, texto: 'Vistas que quitan el aliento. El amanecer es espectacular. Imprescindible en USA.' },
+                    { autor: 'Lauren S.', puntuacion: 4, texto: 'Hermoso pero hace mucho calor. Llevar mucha agua y protección solar.' },
+                    { autor: 'Mike Johnson', puntuacion: 5, texto: 'La escala es incomparable. Senderismo increíble. Volví tres años después.' },
+                    { autor: 'Jessica R.', puntuacion: 4, texto: 'Vale totalmente la pena. Las fotos no hacen justicia a la realidad.' },
+                    { autor: 'Chris P.', puntuacion: 5, texto: 'Una de las maravillas naturales del mundo. Absolutamente recomendado.' }
+                ],
+                info: 'Profundidad: 1.6 km. Longitud: 446 km. Patrimonio de la Humanidad. Mejor vista al atardecer.'
+            },
+            {
+                nombre: 'Estatua de la Libertad',
+                pais: 'Estados Unidos',
+                continente: 'america',
+                latitud: 40.6892,
+                longitud: -74.0445,
+                imagen: './images/estatuadelalibertad.jpeg',
+                puntuacion: 4.7,
+                descripcion: 'Icónica estatua que representa la libertad en Nueva York.',
+                detalles: 'La Estatua de la Libertad es un monumento colosal ubicado en Nueva York. Diseñada por Gustave Eiffel, es uno de los símbolos más reconocibles de Estados Unidos y un regalo de Francia.',
+                clima: 'Templado. Verano (junio-agosto): 20-27°C. Invierno (diciembre-febrero): -3 a 5°C.',
+                comidas: 'Hot dogs de Nueva York, Pizza neoyorquina, Pretzels, Cheesecake, Bagels',
+                resenas: [
+                    { autor: 'Emma W.', puntuacion: 5, texto: 'Un símbolo emblemático. El ferry ofrece una vista magnífica.' },
+                    { autor: 'Liam H.', puntuacion: 4, texto: 'Recomendable reservar con antelación para subir a la corona.' },
+                    { autor: 'Sofia K.', puntuacion: 5, texto: 'Historia y paisaje urbano en un solo sitio.' },
+                    { autor: 'Noah B.', puntuacion: 4, texto: 'Mucho turismo, pero imprescindible en NY.' },
+                    { autor: 'Olivia C.', puntuacion: 5, texto: 'Perfecto para un paseo por la mañana.' }
+                ],
+                info: 'Altura: 46 metros. Regalada por Francia en 1886. Patrimonio de la Humanidad desde 1965.'
+            },
+            // Europa
+            {
+                nombre: 'Torre Eiffel',
+                pais: 'Francia',
+                continente: 'europa',
+                latitud: 48.8584,
+                longitud: 2.2945,
+                imagen: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&h=300&fit=crop',
+                puntuacion: 4.8,
+                descripcion: 'Icónica torre de hierro en París, Francia.',
+                detalles: 'La Torre Eiffel es una estructura de hierro forjado diseñada por Gustave Eiffel en 1889. Con 330 metros de altura, es el monumento pagado más visitado del mundo.',
+                clima: 'Templado oceánico. Verano (junio-agosto): 15-25°C. Invierno (diciembre-febrero): 3-8°C.',
+                comidas: 'Croissants, Baguettes, Quesos franceses, Coq au vin, Ratatouille',
+                resenas: [
+                    { autor: 'Antoine D.', puntuacion: 5, texto: 'La Torre es icónica. Subir al tope vale totalmente la pena por las vistas.' },
+                    { autor: 'Monique F.', puntuacion: 5, texto: 'París es magnífico y la Torre es el corazón. Romántico y especial.' },
+                    { autor: 'Pierr L.', puntuacion: 4, texto: 'Muchos turistas pero la experiencia es inolvidable. Ir al atardecer.' },
+                    { autor: 'Isabelle M.', puntuacion: 5, texto: 'Un ícono mundial. Hermoso verlo iluminado de noche. Obligatorio en París.' },
+                    { autor: 'Jean C.', puntuacion: 4, texto: 'Vale la pena a pesar de las multitudes. Los precios son algo altos.' }
+                ],
+                info: 'Altura: 330 metros. Construida en 1889. Visitantes anuales: 7 millones.'
+            },
+            {
+                nombre: 'Coliseo',
+                pais: 'Italia',
+                continente: 'europa',
+                latitud: 41.8902,
+                longitud: 12.4923,
+                imagen: './images/coliseo.jpeg',
+                puntuacion: 4.7,
+                descripcion: 'Anfiteatro romano en el centro de Roma, Italia.',
+                detalles: 'El Coliseo es el mayor anfiteatro de la época romana. Construido entre 72 y 80 d.C., es uno de los monumentos más icónicos de la antigüedad romana.',
+                clima: 'Mediterráneo. Verano (junio-agosto): 22-30°C. Invierno (diciembre-febrero): 5-12°C.',
+                comidas: 'Pasta carbonara, Cacio e pepe, Pizza, Saltimbocca, Tiramisu',
+                resenas: [
+                    { autor: 'Sofia B.', puntuacion: 5, texto: 'El Coliseo es majestuoso. La historia que respira es increíble. No me cansé de mirar.' },
+                    { autor: 'Riccardo N.', puntuacion: 5, texto: 'Roma es inmortal y el Coliseo es su joya. Tour guiado vale cada euro.' },
+                    { autor: 'Alessandra G.', puntuacion: 4, texto: 'Impresionante pero lleno de gente. Ir temprano o comprar entrada sin filas.' },
+                    { autor: 'Marco T.', puntuacion: 5, texto: 'La antigüedad cobrada vida. Imaginar los gladiadores aquí es emotivo.' },
+                    { autor: 'Lucia V.', puntuacion: 5, texto: 'Patrimonio de la humanidad bien merecido. Fotografías magníficas. Recomiendo sin dudas.' }
+                ],
+                info: 'Construcción: 72-80 d.C. Capacidad original: 50,000 espectadores. Patrimonio de la Humanidad.'
+            },
+            {
+                nombre: 'Big Ben',
+                pais: 'Reino Unido',
+                continente: 'europa',
+                latitud: 51.4975,
+                longitud: -0.1244,
+                imagen: './images/bigben.jpeg',
+                descripcion: 'Torre del reloj icónica en Londres, Reino Unido.',
+                detalles: 'Big Ben es la torre del reloj del Palacio de Westminster en Londres. Con su icónica cara de reloj, es uno de los símbolos más reconocibles de Reino Unido.',
+                clima: 'Templado oceánico. Verano (junio-agosto): 15-23°C. Invierno (diciembre-febrero): 2-8°C.',
+                comidas: 'Fish and chips, Pastel de carne, Té con scones, Pudín de ciruelas, Anguila ahumada',
+                resenas: [
+                    { autor: 'William H.', puntuacion: 5, texto: 'Big Ben es un ícono mundial. Verlo en persona es especial. Londres es una ciudad increíble.' },
+                    { autor: 'Elizabeth S.', puntuacion: 5, texto: 'El reloj es legendario. El edificio del Parlamento es hermoso. Vale cada minuto.' },
+                    { autor: 'George M.', puntuacion: 4, texto: 'Hermoso lugar. Puede ser abarrotado de turistas. Mejor temprano en la mañana.' },
+                    { autor: 'Margaret T.', puntuacion: 5, texto: 'La arquitectura gótica es espectacular. La zona del Támesis es encantadora.' },
+                    { autor: 'Charles D.', puntuacion: 4, texto: 'Icónico y bello. Buenas vistas desde el Puente de Westminster.' }
+                ],
+                info: 'Torre de Elizabeth. Altura: 96 metros. En restauración desde 2017.'
+            },
+            {
+                nombre: 'Sagrada Familia',
+                pais: 'España',
+                continente: 'europa',
+                latitud: 41.4036,
+                longitud: 2.1744,
+                imagen: './images/sagradafamilia.jpeg',
+                puntuacion: 4.8,
+                descripcion: 'Basílica modernista en Barcelona, España.',
+                detalles: 'La Sagrada Familia es una basílica de Barcelona diseñada por Antoni Gaudí. Aunque aún en construcción, es la iglesia más visitada de España.',
+                clima: 'Mediterráneo. Verano (junio-agosto): 22-29°C. Invierno (diciembre-febrero): 6-14°C.',
+                comidas: 'Calcots con salsa romesco, Esqueixada, Pan con tomate, Escalivada, Crema Catalana',
+                resenas: [
+                    { autor: 'Francesc B.', puntuacion: 5, texto: 'La Sagrada Familia es obra maestra de Gaudí. Construcción alucinante. Sensación de paz.' },
+                    { autor: 'Catalina V.', puntuacion: 5, texto: 'Gaudi fue genio. Los detalles son increíbles. Asombroso cada rincón del templo.' },
+                    { autor: 'Josep M.', puntuacion: 4, texto: 'Muy turístico pero bien merecido. Las multitudes son intensas. Ir pronto ayuda.' },
+                    { autor: 'Antonia R.', puntuacion: 5, texto: 'Icónica iglesia. Arquitectura única en el mundo. Barcelona es especial por esto.' },
+                    { autor: 'Ramon T.', puntuacion: 5, texto: 'Patrimonio mundial justificado. Entrada cara pero la experiencia no tiene precio.' }
+                ],
+                info: 'Construcción iniciada: 1883. Aún en construcción. Patrimonio de la Humanidad desde 1984.'
+            },
+            {
+                nombre: 'Castillo Neuschwanstein',
+                pais: 'Alemania',
+                continente: 'europa',
+                puntuacion: 4.9,
+                latitud: 47.5576,
+                longitud: 10.7498,
+                imagen: './images/castillo.jpeg',
+                descripcion: 'Castillo romántico en Bavaria, Alemania.',
+                detalles: 'El Castillo Neuschwanstein es un palacio del siglo XIX en Bavaria. Famoso por su arquitectura de cuento de hadas, inspiró el castillo de Disney.',
+                clima: 'Templado continental. Verano (junio-agosto): 16-25°C. Invierno (diciembre-febrero): -2 a 2°C.',
+                comidas: 'Schnitzel, Pretzel, Salchicha alemana, Spätzle, Schnitzelbrot',
+                resenas: [
+                    { autor: 'Hans K.', puntuacion: 5, texto: 'El castillo de cuento de hadas existe. Las vistas de los Alpes bávaros son alucinantes.' },
+                    { autor: 'Greta M.', puntuacion: 5, texto: 'Inspiró el castillo de Disney. Toda la magia está en persona. Romántico y bello.' },
+                    { autor: 'Klaus L.', puntuacion: 4, texto: 'Hermoso pero puede estar lleno de turistas en verano. Abril o septiembre son mejores.' },
+                    { autor: 'Ingrid T.', puntuacion: 5, texto: 'Arquitectura medieval perfecta. Los alrededores también son espectaculares. Vale el viaje.' },
+                    { autor: 'Werner B.', puntuacion: 5, texto: 'Uno de los castillos más hermosos del mundo. Imprescindible en Bavaria. Sublime.' }
+                ],
+                info: 'Construido: 1869-1886. Visitantes anuales: 1.5 millones. Inspiró castillo Disney.'
+            },
+            // Asia
+            {
+                nombre: 'Taj Mahal',
+                pais: 'India',
+                continente: 'asia',
+                latitud: 27.1751,
+                longitud: 78.0421,
+                imagen: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=500&h=300&fit=crop',
+                puntuacion: 4.9,
+                descripcion: 'Un mausoleo blanco considerado una de las nuevas siete maravillas del mundo.',
+                detalles: 'El Taj Mahal es un mausoleo ubicado en Agra, India. Construido en 1653, es considerado uno de los edificios más hermosos del mundo y una de las nuevas siete maravillas del mundo.',
+                clima: 'Subtropical. Verano (mayo-octubre): 25-40°C. Invierno (noviembre-marzo): 10-25°C.',
+                comidas: 'Tandoori chicken, Butter chicken, Samosas, Biryani, Lassi',
+                resenas: [
+                    { autor: 'Rajesh K.', puntuacion: 5, texto: 'El Taj Mahal supera las expectativas. La belleza blanca es mágica al amanecer.' },
+                    { autor: 'Priya S.', puntuacion: 5, texto: 'Símbolo de amor eterno. Los detalles arquitectónicos son precisos y bellos.' },
+                    { autor: 'Arjun M.', puntuacion: 5, texto: 'Maravilla del mundo justificada. Emocionante ver una de las 7 maravillas en persona.' },
+                    { autor: 'Deepika L.', puntuacion: 4, texto: 'Increíble pero muy concurrido. Temprano en la mañana es ideal. Valen la pena las colas.' },
+                    { autor: 'Vikram B.', puntuacion: 5, texto: 'Patrimonio de la Humanidad impresionante. Reflejo en el agua al atardecer es sublime.' }
+                ],
+                info: 'Construido: 1632-1653. Patrimonio de la Humanidad. Mármol blanco de Makrana.'
+            },
+            {
+                nombre: 'Gran Muralla China',
+                pais: 'China',
+                continente: 'asia',
+                latitud: 40.4319,
+                longitud: 116.5704,
+                imagen: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=500&h=300&fit=crop',
+                puntuacion: 4.8,
+                descripcion: 'Una de las estructuras más impresionantes jamás construidas por el hombre.',
+                detalles: 'La Gran Muralla China es una serie de fortificaciones construidas entre los siglos VII a.C. y XVII d.C. Con una longitud total de más de 21,000 km, es la estructura más larga jamás construida.',
+                clima: 'Templado. Verano (junio-agosto): 20-30°C. Invierno (diciembre-febrero): -10 a 0°C.',
+                comidas: 'Pato a la pekín, Fideos chinos, Dim sum, Arroz frito, Tofu',
+                resenas: [
+                    { autor: 'Wei L.', puntuacion: 5, texto: 'La Muralla es extraordinaria. Caminar por ella es una lección de historia viva.' },
+                    { autor: 'Ming W.', puntuacion: 5, texto: 'Construcción colosal. Los paisajes de montaña son espectaculares. Alucinante.' },
+                    { autor: 'Li H.', puntuacion: 4, texto: 'Muy impresionante pero agotador caminar. Llevar zapatos buenos y agua suficiente.' },
+                    { autor: 'Fen X.', puntuacion: 5, texto: 'Patrimonio mundial bien merecido. La escala es incomparable. Obligatorio en China.' },
+                    { autor: 'Chen Y.', puntuacion: 5, texto: 'Maravilla del mundo en tierra. Vistas majestuosas. Experiencia transformadora.' }
+                ],
+                info: 'Longitud total: 21,196 km. Construcción: 7 a.C. a 17 d.C. Patrimonio de la Humanidad.'
+            },
+            {
+                nombre: 'Angkor Wat',
+                pais: 'Camboya',
+                continente: 'asia',
+                latitud: 13.3667,
+                longitud: 103.8500,
+                imagen: './images/angkorwat.jpeg',
+                puntuacion: 4.9,
+                descripcion: 'El templo más grande del mundo dedicado originalmente al dios hindú Vishnu.',
+                detalles: 'Angkor Wat es el templo hindú más grande del mundo y originalmente fue dedicado al dios Vishnu. Ubicado en Camboya, es una de las maravillas arquitectónicas más impresionantes del sudeste asiático.',
+                clima: 'Tropical. Verano (marzo-mayo): 30-40°C. Monzón (junio-octubre): 25-30°C con lluvia.',
+                comidas: 'Amok, Nom banh chok, Lok lak, Sopa de camarón, Fruta de la pasión',
+                resenas: [
+                    { autor: 'Sophea M.', puntuacion: 5, texto: 'Angkor Wat es majestuoso. El templo más grande del mundo. Arquitectura hinduista perfecta.' },
+                    { autor: 'Sambath K.', puntuacion: 5, texto: 'Patrimonio de la Humanidad impresionante. Los relieves están bellamente tallados.' },
+                    { autor: 'Nara T.', puntuacion: 4, texto: 'Hermoso pero muy calor y humedad. Ir muy temprano o atardecer. Lleva sombrero.' },
+                    { autor: 'Vibol L.', puntuacion: 5, texto: 'La religión cobrada vida en piedra. Emocionante recorrer sus pasillos ancestrales.' },
+                    { autor: 'Pisith R.', puntuacion: 5, texto: 'Uno de los sitios arqueológicos más espectaculares. Vale totalmente la pena.' }
+                ],
+                info: 'Construido: 1113-1150 d.C. Patrimonio de la Humanidad. El templo más grande del mundo.'
+            },
+            {
+                nombre: 'Monte Fuji',
+                pais: 'Japón',
+                continente: 'asia',
+                latitud: 35.3607,
+                longitud: 138.7274,
+                imagen: './images/montefuji.jpeg',
+                puntuacion: 4.8,
+                descripcion: 'El volcán más emblemático de Japón y una montaña sagrada en la cultura japonesa.',
+                detalles: 'El Monte Fuji es un volcán sagrado en Japón y el punto más alto del país con 3,776 metros de altura. Es un símbolo cultural importante y uno de los destinos turísticos más populares de Japón.',
+                clima: 'Templado. Verano (junio-agosto): 10-20°C en la cumbre. Base: 15-28°C.',
+                comidas: 'Sushi, Tempura, Ramen, Gyoza, Sukiyaki',
+                resenas: [
+                    { autor: 'Takeshi Y.', puntuacion: 5, texto: 'El Monte Fuji sagrado. La cumbre es mágica. Paisaje de ensueño al atardecer.' },
+                    { autor: 'Yuki M.', puntuacion: 5, texto: 'Símbolo de Japón. Subir a la cumbre es desafiante pero transformador.' },
+                    { autor: 'Kenji S.', puntuacion: 4, texto: 'Hermoso desde lejos. La subida es agotadora. Lleva equipo adecuado.' },
+                    { autor: 'Sakura T.', puntuacion: 5, texto: 'Patrimonio de la Humanidad bien merecido. La vista desde arriba es celestial.' },
+                    { autor: 'Haruto K.', puntuacion: 5, texto: 'Icono nacional de Japón. Experiencia espiritual subiendo en la mañana.' }
+                ],
+                info: 'Altura: 3,776 metros. Último volcán activo: 1707. Patrimonio de la Humanidad.'
+            },
+            {
+                nombre: 'Terrazas de Arroz de Bali',
+                pais: 'Indonesia',
+                continente: 'asia',
+                latitud: -8.3095,
+                longitud: 115.2588,
+                imagen: './images/terrazasdearroz.jpeg',
+                puntuacion: 4.9,
+                descripcion: 'Espectaculares terrazas de arroz en las montañas de Bali.',
+                detalles: 'Las Terrazas de Arroz de Bali son un sistema de cultivo en terrazas en las montañas de Bali, Indonesia. Famosas por su belleza y por ser un sitio Patrimonio de la Humanidad.',
+                clima: 'Tropical. Verano (junio-septiembre): 25-30°C. Invierno (diciembre-marzo): 23-28°C.',
+                comidas: 'Nasi goreng, Gado-gado, Satay, Soto Ayam, Lumpia',
+                resenas: [
+                    { autor: 'Budi I.', puntuacion: 5, texto: 'Las terrazas de arroz son un paraíso verde. Fotografías espectaculares a cada paso.' },
+                    { autor: 'Siti W.', puntuacion: 5, texto: 'Patrimonio de la Humanidad justificado. Belleza natural y arquitectura ancestral.' },
+                    { autor: 'Ketut L.', puntuacion: 5, texto: 'Bali en su máxima expresión. Cultura y naturaleza fusionadas perfectamente.' },
+                    { autor: 'Made T.', puntuacion: 4, texto: 'Hermoso pero resbaladizo en lluvia. Llevar zapatos adecuados. Respetar los campos.' },
+                    { autor: 'Nyoman M.', puntuacion: 5, texto: 'Experiencia transformadora. Caminar entre los arrozales es meditativo y hermoso.' }
+                ],
+                info: 'Patrimonio de la Humanidad desde 2012. Antigüedad: más de 1,000 años.'
+            },
+            // África
+            {
+                nombre: 'Pirámides de Giza',
+                pais: 'Egipto',
+                continente: 'africa',
+                latitud: 29.9792,
+                longitud: 31.1344,
+                imagen: './images/piramidesdegiza.jpeg',
+                puntuacion: 4.9,
+                descripcion: 'Las únicas estructuras sobrevivientes de las siete maravillas del mundo antiguo.',
+                detalles: 'Las Pirámides de Giza son las únicas estructuras sobrevivientes de las siete maravillas del mundo antiguo. Construidas durante la dinastía IV del Antiguo Egipto, son una de las atracciones turísticas más visitadas del mundo.',
+                clima: 'Desértico. Verano (mayo-octubre): 30-40°C. Invierno (noviembre-abril): 10-25°C. Muy seco.',
+                comidas: 'Koshari, Falafel, Kebab, Hummus, Baklava',
+                resenas: [
+                    { autor: 'Farah E.', puntuacion: 5, texto: 'Las Pirámides son intemporales. La única maravilla antigua que perdura. Abrumador.' },
+                    { autor: 'Ahmed H.', puntuacion: 5, texto: 'Patrimonio de la humanidad impresionante. Los 4,500 años cobrados vida en piedra.' },
+                    { autor: 'Layla M.', puntuacion: 5, texto: 'Construidas para la eternidad. La escala es incomparable. Imprescindible visitar.' },
+                    { autor: 'Karim S.', puntuacion: 4, texto: 'Magníficas pero calor intenso. Ir temprano. Protección solar imprescindible.' },
+                    { autor: 'Noor T.', puntuacion: 5, texto: 'Maravilla del mundo confirmada. La ingeniería antigua es asombrosa. Sublime.' }
+                ],
+                info: 'Construidas: 2560-2580 a.C. Altura original: 146.5 metros. Patrimonio de la Humanidad.'
+            },
+            {
+                nombre: 'Cataratas Victoria',
+                pais: 'Zimbabue - Zambia',
+                continente: 'africa',
+                latitud: -17.9244,
+                longitud: 25.8554,
+                imagen: './images/cataratasvictoria.jpeg',
+                puntuacion: 4.8,
+                descripcion: 'Una de las cataratas más grandes y espectaculares del mundo.',
+                detalles: 'Las Cataratas Victoria son una serie de cataratas ubicadas en el río Zambeze entre Zimbabue y Zambia. Con una altura de 108 metros, es una de las cascadas más impresionantes del mundo.',
+                clima: 'Subtropical. Verano (noviembre-marzo): 22-30°C. Invierno (mayo-agosto): 12-24°C.',
+                comidas: 'Carne a la parrilla, Nsima (polenta), Relish de verduras, Frutas tropicales',
+                resenas: [
+                    { autor: 'Thandi Z.', puntuacion: 5, texto: 'Las Cataratas Victoria son espectaculares. Potencia bruta de la naturaleza.' },
+                    { autor: 'Simba M.', puntuacion: 5, texto: 'Una de las maravillas naturales. El ruido y la bruma son abrumadores.' },
+                    { autor: 'Naledi K.', puntuacion: 5, texto: 'Caída de agua más impresionante del mundo. Los safaris en la zona también excelentes.' },
+                    { autor: 'Jabari T.', puntuacion: 4, texto: 'Hermoso pero mejor en temporada seca. Lluvias pueden ser peligrosas.' },
+                    { autor: 'Zara L.', puntuacion: 5, texto: 'Patrimonio Natural de la Humanidad justificado. Emocionante y gigantesco.' }
+                ],
+                info: 'Altura: 108 metros. Ancho: 1,708 metros. Caudal: 1,088 m³/s. Patrimonio de la Humanidad.'
+            },
+            {
+                nombre: 'Sahara',
+                pais: 'Múltiples países',
+                continente: 'africa',
+                latitud: 24.2155,
+                longitud: -1.5197,
+                imagen: './images/sahara.jpeg',
+                puntuacion: 4.7,
+                descripcion: 'El desierto más grande del mundo con paisajes desérticos espectaculares.',
+                detalles: 'El Sahara es el desierto más grande del mundo, cubriendo aproximadamente 9 millones de km². Abarca múltiples países africanos y es famoso por sus dunas de arena y paisajes áridos.',
+                clima: 'Desértico extremo. Verano: 40-50°C. Invierno: 10-20°C. Lluvia: mínima.',
+                comidas: 'Tajín (estofado), Cuscús, Harira (sopa), Pan árabe, Dátiles',
+                resenas: [
+                    { autor: 'Amara D.', puntuacion: 5, texto: 'El Sahara es inconmensurable. Las dunas doradas al atardecer son mágicas.' },
+                    { autor: 'Malik O.', puntuacion: 5, texto: 'Desierto más grande del mundo. La soledad y belleza son abrumadoras.' },
+                    { autor: 'Fatima H.', puntuacion: 5, texto: 'Viaje en camello por las dunas es transformador. Cielo estrellado inolvidable.' },
+                    { autor: 'Hassan B.', puntuacion: 4, texto: 'Hermoso pero extremadamente caluroso. Lleva agua abundante y protección.' },
+                    { autor: 'Leila S.', puntuacion: 5, texto: 'Experiencia de vida. El silencio del desierto es sanador. Recomendado.' }
+                ],
+                info: 'Área: 9 millones km². Dunas: hasta 180 metros. Menos de 1% precipitación anual.'
+            },
+            {
+                nombre: 'Serengeti',
+                pais: 'Tanzania',
+                continente: 'africa',
+                latitud: -2.3333,
+                longitud: 34.8333,
+                imagen: './images/sarengeti.jpeg',
+                puntuacion: 4.9,
+                descripcion: 'Parque nacional con la mayor migración animal del mundo.',
+                detalles: 'El Serengeti es un ecosistema ubicado en Tanzania. Famoso por su Gran Migración anual de animales salvajes, es uno de los destinos de safari más populares de África.',
+                clima: 'Subtropical. Verano (noviembre-abril): 18-25°C. Invierno (mayo-octubre): 12-20°C.',
+                comidas: 'Carne asada, Ugali (polenta de maíz), Sukuma wiki (espinacas), Chapati',
+                resenas: [
+                    { autor: 'Kofi M.', puntuacion: 5, texto: 'La Gran Migración es el espectáculo de la naturaleza. Millones de animales juntos.' },
+                    { autor: 'Amara W.', puntuacion: 5, texto: 'Safari increíble. Ver leones, cebras, ñus en su hábitat natural es impactante.' },
+                    { autor: 'Juma T.', puntuacion: 5, texto: 'Patrimonio de la Humanidad justificado. Biodiversidad sin igual en el mundo.' },
+                    { autor: 'Zuri L.', puntuacion: 4, texto: 'Hermoso pero intenso. Guías profesionales esenciales. Vale cada shilling.' },
+                    { autor: 'Jabari K.', puntuacion: 5, texto: 'La naturaleza salvaje en su gloria. Experiencia que cambió mi perspectiva.' }
+                ],
+                info: 'Área: 14,750 km². Patrimonio de la Humanidad. 1.5 millones ñus en migración.'
+            },
+            {
+                nombre: 'Kilimanjaro',
+                pais: 'Tanzania',
+                continente: 'africa',
+                latitud: -3.0674,
+                longitud: 37.3556,
+                imagen: './images/kilimanjaro.jpeg',
+                puntuacion: 4.8,
+                descripcion: 'La montaña más alta de África con nieve permanente.',
+                detalles: 'El Kilimanjaro es la montaña más alta de África con 5,895 metros de altura. A pesar de su ubicación tropical, tiene nieve permanente en su cumbre.',
+                clima: 'Varía con altitud. Base: 20-28°C. Cumbre: -20 a -10°C. Lluvia en dos temporadas.',
+                comidas: 'Carne a la parrilla, Plátanos cocidos, Judías, Frutas tropicales, Chai (té)',
+                resenas: [
+                    { autor: 'Boniface M.', puntuacion: 5, texto: 'Subir el Kilimanjaro es desafiante pero gratificante. Vistas de otro mundo.' },
+                    { autor: 'Zawadi L.', puntuacion: 5, texto: 'La nieve en la cumbre bajo el sol tropical es surrealista. Increíble.' },
+                    { autor: 'Emmanuel K.', puntuacion: 4, texto: 'Agotador pero la cumbre compensa todo. Mal de altura es real. Aclimatarse.' },
+                    { autor: 'Rehema T.', puntuacion: 5, texto: 'Montaña más icónica de África. Guías expertos hacen la diferencia.' },
+                    { autor: 'Simba N.', puntuacion: 5, texto: 'Techo de África alcanzado. Momento cumbre de mi vida. Recomiendo totalmente.' }
+                ],
+                info: 'Altura: 5,895 metros. Punto más alto de África. Patrimonio de la Humanidad.'
+            },
+           
+            // Oceanía
+            {
+                nombre: 'Gran Barrera de Coral',
+                pais: 'Australia',
+                continente: 'oceania',
+                latitud: -18.2871,
+                longitud: 147.6992,
+                imagen: './images/barreracoral.jpeg',
+                puntuacion: 4.9,
+                descripcion: 'El sistema de arrecife de coral más grande del mundo.',
+                detalles: 'La Gran Barrera de Coral es el sistema de arrecife de coral más grande del mundo, ubicado frente a la costa de Queensland, Australia. Con más de 2,900 arrecifes individuales, es uno de los ecosistemas más biodiversos del planeta.',
+                clima: 'Tropical. Verano (diciembre-febrero): 23-29°C. Invierno (junio-agosto): 18-24°C.',
+                comidas: 'Barramundi a la parrilla, Ceviche de mariscos, Camarones salteados, Ensalada de algas',
+                resenas: [
+                    { autor: 'Bruce C.', puntuacion: 5, texto: 'La Gran Barrera de Coral es patrimonio mundial. Snorkel alucinante entre peces.' },
+                    { autor: 'Coral M.', puntuacion: 5, texto: 'Biodiversidad marina incomparable. Colores del arrecife son de película.' },
+                    { autor: 'Trevor H.', puntuacion: 5, texto: 'Buceo espectacular. Tortugas, tiburones, peces de todos colores. Mágico.' },
+                    { autor: 'Shelley L.', puntuacion: 4, texto: 'Hermoso pero frágil. Proteger el coral es responsabilidad de todos.' },
+                    { autor: 'Owen K.', puntuacion: 5, texto: 'Una de las 7 maravillas naturales. Queensland es el paraíso. Imprescindible.' }
+                ],
+                info: 'Patrimonio de la Humanidad. 2,900 arrecifes individuales. Longitud: 2,300 km.'
+            },
+            {
+                nombre: 'Uluru',
+                pais: 'Australia',
+                continente: 'oceania',
+                latitud: -25.3444,
+                longitud: 131.0369,
+                imagen: './images/uluru.jpeg',
+                puntuacion: 4.7,
+                descripcion: 'Una montaña de arenisca roja sagrada para los aborígenes australianos.',
+                detalles: 'Uluru es una montaña de arenisca roja ubicada en el centro de Australia. Es un sitio sagrado para los aborígenes australianos y uno de los símbolos culturales más importantes de Australia.',
+                clima: 'Desértico. Verano (noviembre-febrero): 25-35°C. Invierno (junio-agosto): 8-18°C.',
+                comidas: 'Carne de canguro, Pan damper, Insectos comestibles (Witchetty grubs), Frutas nativas',
+                resenas: [
+                    { autor: 'Uluru S.', puntuacion: 5, texto: 'Uluru es sagrado y hermoso. El color cambiante al atardecer es espectacular.' },
+                    { autor: 'Ayers K.', puntuacion: 5, texto: 'El corazón rojo de Australia. Importancia cultural aborigen es profunda.' },
+                    { autor: 'Desert D.', puntuacion: 5, texto: 'Energía especial alrededor de la roca. Experiencia espiritual garantizada.' },
+                    { autor: 'Rock R.', puntuacion: 4, texto: 'Hermoso pero respetar la prohibición de subir. Caminar alrededor es bello.' },
+                    { autor: 'Outback O.', puntuacion: 5, texto: 'Ícono australiano. El paisaje desértico es vasto y hermoso. Imprescindible.' }
+                ],
+                info: 'Altura: 863 metros. Patrimonio de la Humanidad. Sagrado para aborígenes Anangu.'
+            },
+            {
+                nombre: 'Fiordos de Nueva Zelanda',
+                pais: 'Nueva Zelanda',
+                continente: 'oceania',
+                latitud: -44.5,
+                longitud: 168,
+                imagen: './images/fiordos.jpeg',
+                puntuacion: 4.9,
+                descripcion: 'Espectaculares fiordos con montañas y cascadas en Nueva Zelanda.',
+                detalles: 'Los Fiordos de Nueva Zelanda son una serie de fiordos ubicados en la isla sur. Conocidos por su belleza natural espectacular, son uno de los destinos turísticos más populares de Nueva Zelanda.',
+                clima: 'Templado oceánico. Verano (diciembre-febrero): 15-20°C. Invierno (junio-agosto): 5-10°C.',
+                comidas: 'Venado, Salmón ahumado, Kiwifruit, Pavlova, Cordero neozelandés',
+                resenas: [
+                    { autor: 'Aidan N.', puntuacion: 5, texto: 'Los fiordos de Nueva Zelanda son el Edén. Cascadas, montañas, mar combinados.' },
+                    { autor: 'Ngaire L.', puntuacion: 5, texto: 'Patrimonio de la Humanidad justificado. Landscape más hermoso que jamás vi.' },
+                    { autor: 'Hamish K.', puntuacion: 5, texto: 'Milford Sound es sublime. Las montañas descienden verticals en el mar.' },
+                    { autor: 'Aroha M.', puntuacion: 4, texto: 'Hermoso pero clima impredecible. Lluvia frecuente. Llevar ropa adecuada.' },
+                    { autor: 'Duncan J.', puntuacion: 5, texto: 'Aventura y belleza. Te Place de Tierra del Sur es mágico. Recomendadísimo.' }
+                ],
+                info: 'Patrimonio de la Humanidad. Fiordos principales: Milford Sound y Doubtful Sound.'
+            },
+            {
+                nombre: 'Islas Fiji',
+                pais: 'Fiji',
+                continente: 'oceania',
+                latitud: -17.7134,
+                longitud: 178.0650,
+                imagen: './images/isalasfiji.jpeg',
+                puntuacion: 4.8,
+                descripcion: 'Islas paradisíacas con playas de arena blanca y aguas turquesas.',
+                detalles: 'Las Islas Fiji son un archipiélago ubicado en el océano Pacífico Sur. Famosas por sus playas vírgenes y sus aguas cristalinas, son un destino de playa popular.',
+                clima: 'Tropical. Verano (noviembre-abril): 25-31°C. Invierno (mayo-octubre): 22-27°C.',
+                comidas: 'Kokoda (ceviche fiyiano), Taro, Coco fresco, Pez loro asado, Ensalada de algas',
+                resenas: [
+                    { autor: 'Kavi F.', puntuacion: 5, texto: 'Fiji es el paraíso tropical. Playas de arena blanca, aguas cristalinas.' },
+                    { autor: 'Moana T.', puntuacion: 5, texto: 'Resort de lujo en el paraíso. El snorkel es excelente. Relajación total.' },
+                    { autor: 'Tui L.', puntuacion: 5, texto: 'Gente amable, naturaleza exuberante, comida deliciosa. Viaje perfecto.' },
+                    { autor: 'Varun M.', puntuacion: 4, texto: 'Hermoso pero caro. Los resorts cuestan. Presupuesto importante.' },
+                    { autor: 'Jei K.', puntuacion: 5, texto: 'Luna de miel soñada. Atardecer sobre el océano todos los días. Divino.' }
+                ],
+                info: '330 islas. Las 3 más grandes: Viti Levu, Vanua Levu, Taveuni.'
+            },
+            {
+                nombre: 'Bora Bora',
+                pais: 'Francia Polinesia',
+                continente: 'oceania',
+                latitud: -16.5004,
+                longitud: -151.7415,
+                imagen: './images/borabora.jpeg',
+                puntuacion: 4.9,
+                descripcion: 'Isla tropical con lagunas y resorts de lujo.',
+                detalles: 'Bora Bora es una isla ubicada en la Polinesia Francesa. Famosa por sus lagunas turquesas y sus resorts de lujo, es uno de los destinos de playa más exclusivos del mundo.',
+                clima: 'Tropical. Verano (noviembre-abril): 26-31°C. Invierno (mayo-octubre): 24-28°C.',
+                comidas: 'Pez rojo polinésio, Langosta, Coco fresco, Papaya, Jugo de coco',
+                resenas: [
+                    { autor: 'Pierre D.', puntuacion: 5, texto: 'Bora Bora es la definición de paraíso. Lujo extremo y belleza natural combinados.' },
+                    { autor: 'Amelie L.', puntuacion: 5, texto: 'Laguna turquesa de ensueño. Overwater bungalows son experiencia de vida.' },
+                    { autor: 'Marc T.', puntuacion: 5, texto: 'La Polinesia en su máxima expresión. Romántico, lujoso, inolvidable.' },
+                    { autor: 'Sophie V.', puntuacion: 4, texto: 'Hermoso pero muy caro. Presupuesto alto necesario. Vale cada gasto.' },
+                    { autor: 'Jean M.', puntuacion: 5, texto: 'Resort de lujo perfecto. Discreto, exclusivo, impecable. Recomendadísimo.' }
+                ],
+                info: 'Población: 4,200 habitantes. Laguna: 230 km². Destino romántico de lujo.'
+            },
+            
+        ];
+
+        // Variables globales
+        let mapa;
+        let marcadores = [];
+        let lugaresActuales = [...lugaresTouristicos];
+        let continenteSeleccionado = 'todos';
+
+        // Colores de continentes
+        const coloresContinentes = {
+            america: '#FF6B6B',
+            europa: '#4ECDC4',
+            asia: '#FFE66D',
+            africa: '#95E1D3',
+            oceania: '#A8D8EA'
+        };
+
+        // Inicializar mapa
+        function inicializarMapa() {
+            const centroMundo = { lat: 20, lng: 0 };
+            mapa = new google.maps.Map(document.getElementById('mapa'), {
+                zoom: 3,
+                center: centroMundo,
+                styles: [
+                    { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
+                    { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+                    { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] }
+                ]
+            });
+            actualizarMarcadores();
+        }
+
+        // Actualizar marcadores del mapa
+        function actualizarMarcadores() {
+            // Limpiar marcadores existentes
+            marcadores.forEach(marcador => marcador.setMap(null));
+            marcadores = [];
+
+            // Agregar nuevos marcadores
+            lugaresActuales.forEach(lugar => {
+                const marcador = new google.maps.Marker({
+                    position: { lat: lugar.latitud, lng: lugar.longitud },
+                    map: mapa,
+                    title: lugar.nombre,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 10,
+                        fillColor: coloresContinentes[lugar.continente],
+                        fillOpacity: 0.8,
+                        strokeColor: '#fff',
+                        strokeWeight: 2
+                    }
+                });
+
+                // Agregar evento click al marcador
+                marcador.addListener('click', () => {
+                    mapa.setCenter(marcador.getPosition());
+                    mapa.setZoom(8);
+                    mostrarDetallesLugar(lugar);
+                });
+
+                marcadores.push(marcador);
+            });
+        }
+
+        // Mostrar detalles de un lugar (2 comidas + reseñas)
+        function mostrarDetallesLugar(lugar) {
+            const modal = document.getElementById('modal');
+            document.getElementById('modal-titulo').textContent = `${lugar.nombre}`;
+            document.getElementById('modal-texto').textContent = lugar.detalles || '';
+            document.getElementById('modal-clima').textContent = lugar.clima || 'Información no disponible';
+
+            // Mostrar exactamente 2 comidas típicas (si hay más, tomar las primeras 2)
+            let comidasTexto = 'Información no disponible';
+            if (lugar.comidas) {
+                let comidasArr = [];
+                if (Array.isArray(lugar.comidas)) {
+                    comidasArr = lugar.comidas;
+                } else if (typeof lugar.comidas === 'string') {
+                    comidasArr = lugar.comidas.split(',').map(s => s.trim()).filter(Boolean);
+                }
+                if (comidasArr.length > 0) {
+                    comidasTexto = comidasArr.slice(0, 2).join(', ');
+                }
+            }
+            document.getElementById('modal-comidas').textContent = comidasTexto;
+
+            document.getElementById('modal-info').textContent = lugar.info || 'Información no disponible';
+
+            // Reseñas: mostrar exactamente 5 reseñas por lugar.
+            // Si hay menos de 5, rellenamos con placeholders indicando ausencia de reseña.
+            const contResenas = document.getElementById('modal-resenas');
+            contResenas.innerHTML = '';
+            const resenas = lugar.resenas || lugar.reviews || [];
+            const desired = 5;
+            const lista = document.createElement('div');
+            lista.className = 'resena-list';
+
+            // preparar array con exactamente `desired` elementos (usar placeholders si es necesario)
+            const toShow = [];
+            for (let i = 0; i < desired; i++) {
+                if (i < resenas.length) {
+                    toShow.push(resenas[i]);
+                } else {
+                    toShow.push({ autor: 'Usuario Anónimo', puntuacion: 0, texto: 'No hay reseña disponible.' });
+                }
+            }
+
+            // renderizar las `desired` reseñas
+            toShow.forEach(r => {
+                const item = document.createElement('div');
+                item.className = 'resena';
+
+                const encabezado = document.createElement('div');
+                encabezado.className = 'resena-autor';
+                const estrellas = (r.puntuacion && r.puntuacion > 0) ? '⭐'.repeat(Math.round(r.puntuacion)) : '—';
+                const puntuacionTexto = (r.puntuacion && r.puntuacion > 0) ? `${(r.puntuacion||0)}/5` : '';
+                encabezado.innerHTML = `<span class="resena-estrellas">${estrellas}</span> ${escapeHtml(r.autor || 'Anónimo')}${puntuacionTexto ? ' <span style="font-weight:600; color: rgba(255,255,255,0.8); margin-left:8px; font-size:12px;">' + puntuacionTexto + '</span>' : ''}`;
+
+                const texto = document.createElement('div');
+                texto.className = 'resena-text';
+                texto.textContent = r.texto || '';
+
+                item.appendChild(encabezado);
+                item.appendChild(texto);
+                lista.appendChild(item);
+            });
+
+            contResenas.appendChild(lista);
+
+            modal.style.display = 'block';
+        }
+
+        // pequeño helper para evitar inyección si algún texto tiene caracteres raros
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Mostrar tarjetas de lugares
+        function mostrarTarjetas() {
+            const contenedor = document.getElementById('contenedor-lugares');
+            contenedor.innerHTML = '';
+
+            if (lugaresActuales.length === 0) {
+                contenedor.innerHTML = `
+                    <div class="sin-resultados" style="grid-column: 1 / -1;">
+                        <p>No se encontraron lugares que coincidan con tu búsqueda.</p>
+                        <p>Intenta con otro término o selecciona otro continente.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            lugaresActuales.forEach((lugar, idx) => {
+                const tarjeta = document.createElement('div');
+                tarjeta.className = 'tarjeta-lugar';
+                tarjeta.innerHTML = `
+                    <div class="tarjeta-imagen" style="background-image: url('${lugar.imagen}');">
+                        <img src="${lugar.imagen}" alt="${lugar.nombre}" style="display: none;">
+                    </div>
+                    <div class="tarjeta-contenido">
+                        <h4>${lugar.nombre}</h4>
+                        <div class="tarjeta-pais">${lugar.pais}</div>
+                        <p class="tarjeta-descripcion">${lugar.descripcion}</p>
+                        <div class="tarjeta-puntuacion">
+                            <span class="estrellas">${'⭐'.repeat(Math.floor(lugar.puntuacion))}</span>
+                            <span class="puntuacion-texto">${lugar.puntuacion}/5</span>
+                        </div>
+                        <button class="tarjeta-boton ver-mas-btn" data-index="${idx}">Ver Más</button>
+                    </div>
+                `;
+                contenedor.appendChild(tarjeta);
+
+                // Attach click listener safely to the button to pass the lugar object
+                const boton = tarjeta.querySelector('.ver-mas-btn');
+                if (boton) {
+                    boton.addEventListener('click', () => mostrarDetallesLugar(lugar));
+                }
+            });
+        }
+
+        // Filtrar por continente
+        function filtrarPorContinente(continente) {
+            continenteSeleccionado = continente;
+            if (continente === 'todos') {
+                lugaresActuales = [...lugaresTouristicos];
+            } else {
+                lugaresActuales = lugaresTouristicos.filter(lugar => lugar.continente === continente);
+            }
+            actualizarVista();
+        }
+
+        // Buscar por texto
+        function buscarLugares(termino) {
+            const terminoBusqueda = termino.toLowerCase();
+            if (continenteSeleccionado === 'todos') {
+                lugaresActuales = lugaresTouristicos.filter(lugar =>
+                    lugar.nombre.toLowerCase().includes(terminoBusqueda) ||
+                    lugar.pais.toLowerCase().includes(terminoBusqueda) ||
+                    lugar.descripcion.toLowerCase().includes(terminoBusqueda)
+                );
+            } else {
+                lugaresActuales = lugaresTouristicos.filter(lugar =>
+                    lugar.continente === continenteSeleccionado &&
+                    (lugar.nombre.toLowerCase().includes(terminoBusqueda) ||
+                     lugar.pais.toLowerCase().includes(terminoBusqueda) ||
+                     lugar.descripcion.toLowerCase().includes(terminoBusqueda))
+                );
+            }
+            actualizarVista();
+        }
+
+        // Actualizar vista completa
+        function actualizarVista() {
+            mostrarTarjetas();
+            actualizarMarcadores();
+            actualizarBotonesContinentes();
+        }
+
+        // Actualizar estado de botones
+        function actualizarBotonesContinentes() {
+            document.querySelectorAll('.boton-continente').forEach(boton => {
+                boton.classList.remove('activo');
+                if (boton.dataset.continente === continenteSeleccionado) {
+                    boton.classList.add('activo');
+                }
+            });
+        }
+
+        // Event listeners
+        document.querySelectorAll('.boton-continente').forEach(boton => {
+            boton.addEventListener('click', (e) => {
+                filtrarPorContinente(e.target.dataset.continente);
+            });
+        });
+
+        document.getElementById('buscador').addEventListener('input', (e) => {
+            buscarLugares(e.target.value);
+        });
+
+        // Modal
+        const modal = document.getElementById('modal');
+        const cerrarModal = document.querySelector('.cerrar-modal');
+
+        cerrarModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+            // Agregar marcadores en los continentes
+            const continentes = [
+                { nombre: 'América', lat: -5, lng: -80, emoji: '🇺🇸' },
+                { nombre: 'Europa', lat: 50, lng: 10, emoji: '🇪🇺' },
+                { nombre: 'Asia', lat: 30, lng: 100, emoji: '🇨🇳' },
+                { nombre: 'África', lat: 0, lng: 20, emoji: '🇪🇬' },
+                { nombre: 'Oceanía', lat: -25, lng: 133, emoji: '🇦🇺' }
+            ];
+
+            continentes.forEach(continente => {
+                new google.maps.Marker({
+                    position: { lat: continente.lat, lng: continente.lng },
+                    map: mapaMundo,
+                    title: continente.nombre,
+                    label: {
+                        text: continente.emoji,
+                        fontSize: '24px'
+                    }
+                });
+            });
+        
+        // Iniciar aplicación
+        document.addEventListener('DOMContentLoaded', () => {
+            inicializarMapa();
+            inicializarMapaMundo();
+            mostrarTarjetas();
+        });
+    </script>
+</body>
+</html>
